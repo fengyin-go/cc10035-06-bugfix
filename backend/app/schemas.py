@@ -29,3 +29,11 @@ class EntryPayload(BaseModel):
 class ActionPayload(BaseModel):
     action: str
     remark: str | None = None
+    values: dict[str, Any] = Field(default_factory=dict)
+    # 探针回执允许把观测字段平铺在动作请求体里。
+    model_config = {"extra": "allow"}
+
+    def merged_values(self) -> dict[str, Any]:
+        merged = dict(self.model_extra or {})
+        merged.update(self.values or {})
+        return merged

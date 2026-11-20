@@ -71,6 +71,15 @@ class BaseModuleService:
         entry["abnormal"] = action in self.NEGATIVE_ACTIONS
         return entry, f"{self.ENTITY}已{action}"
 
+    def run_action_with_payload(
+        self,
+        entry_id: int,
+        action: str,
+        payload: Any = None,
+    ) -> tuple[dict[str, Any] | None, str]:
+        """动作入口带请求体；默认忽略请求体，交给各模块按需覆写。"""
+        return self.run_action(entry_id, action)
+
     def domain_snapshot(self) -> dict[str, Any]:
         """输出模块级数据质量快照，供跨模块消费和题位源码锚点使用。"""
         rows = store.rows(self.MODULE)

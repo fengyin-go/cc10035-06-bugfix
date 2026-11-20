@@ -77,5 +77,26 @@ npm run dev
 - 列表接口统一返回 `{ items, total, page, size }`，动作接口统一返回 `{ ok, message }`。
 - 状态流转只允许在 `app/services` 里改，路由层不做业务判断。
 
+## 探针采样与快照台账
+
+探针观测不再只按页面生成快照标识：`app/services/probe_sampling.py` 用
+「探针 + 页面 + 选择器 + DOM/文本哈希 + 采样时间」共同生成观测编号和快照ID，
+同一页面的价格探针和库存探针各自写入独立快照。快照行与采样清单（内部表
+`sampling_manifest`，不计入业务模块）在同一临界区落库，清单回写快照记录ID。
+
+- 回执提交：`POST /api/probe_selector/{id}/observations`（`defer=true` 只登记清单）
+- 运行采样：`POST /api/probe_selector/{id}/trigger-snapshot` 或动作「运行采样」
+- 找回未写入观测：`POST /api/probe_selector/{id}/recover` 或动作「找回观测」
+- 采样清单：`GET /api/probe_selector/{id}/manifest`、`GET /api/sampling_manifest`
+- 清单/台账一致性：`GET /api/sampling_manifest/consistency`
+- 快照详情与差异：`GET /api/page_snapshot/{id}/detail`、`POST /api/page_snapshot/{id}/refresh`
+
+变化比对只使用同一探针「实际确认」的前一份样本；并发提交由进程内锁串行化，
+先确认的条目成为后续条目的基线。回归测试：
+
+```bash
+cd backend && .venv/bin/python -m unittest discover -s tests -v
+```
+
 领域：数据工程
 子方向：数据采集、爬虫与RPA
